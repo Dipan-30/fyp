@@ -6,6 +6,7 @@ import Products from './pages/Products.jsx'
 import Sentiment from './pages/Sentiment.jsx'
 import Forecasting from './pages/Forecasting.jsx'
 import Results from './pages/Results.jsx'
+import Sales from './pages/Sales.jsx'
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="sentiment" element={<Sentiment />} />
           <Route path="forecasting" element={<Forecasting />} />
           <Route path="results" element={<Results />} />
+          <Route path="sales" element={<Sales />} />
           {/* Catch-all — redirect unknown routes to dashboard */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

@@ -7,11 +7,13 @@ import {
   TrendingUp,
   FileBarChart,
   BrainCircuit,
+  ShoppingCart,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   { to: '/',            label: 'Dashboard',         icon: LayoutDashboard },
   { to: '/reviews',     label: 'Reviews',           icon: MessageSquare },
+  { to: '/sales',       label: 'Sales',             icon: ShoppingCart },
   { to: '/products',    label: 'Product Analysis',  icon: Package },
   { to: '/sentiment',   label: 'Sentiment',         icon: BarChart2 },
   { to: '/forecasting', label: 'Forecasting',       icon: TrendingUp },

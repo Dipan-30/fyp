@@ -8,13 +8,12 @@ import axios from 'axios'
 
 const apiClient = axios.create({
   baseURL: '/api',
-  timeout: 10000,
+  timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
 })
 
 // ── Interceptors ─────────────────────────────────────────────────────────────
 
-// Log request errors in development
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -23,14 +22,63 @@ apiClient.interceptors.response.use(
   }
 )
 
-// ── Endpoint helpers ──────────────────────────────────────────────────────────
+// ── Health ────────────────────────────────────────────────────────────────────
 
-/**
- * GET /api/health — verify the backend is running.
- * @returns {Promise<{status: string, app: string, version: string}>}
- */
+/** GET /api/health */
 export async function getHealth() {
   const { data } = await apiClient.get('/health')
+  return data
+}
+
+// ── Dataset ───────────────────────────────────────────────────────────────────
+
+/** GET /api/dataset/stats */
+export async function getDatasetStats() {
+  const { data } = await apiClient.get('/dataset/stats')
+  return data
+}
+
+/** POST /api/dataset/import */
+export async function triggerImport() {
+  const { data } = await apiClient.post('/dataset/import')
+  return data
+}
+
+// ── Products ──────────────────────────────────────────────────────────────────
+
+/** GET /api/products */
+export async function getProducts() {
+  const { data } = await apiClient.get('/products')
+  return data
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/reviews
+ * @param {number} page
+ * @param {number} limit
+ * @param {string|null} productId
+ */
+export async function getReviews({ page = 1, limit = 20, productId = null } = {}) {
+  const params = { page, limit }
+  if (productId) params.product_id = productId
+  const { data } = await apiClient.get('/reviews', { params })
+  return data
+}
+
+// ── Sales ─────────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/sales
+ * @param {number} page
+ * @param {number} limit
+ * @param {string|null} productId
+ */
+export async function getSales({ page = 1, limit = 20, productId = null } = {}) {
+  const params = { page, limit }
+  if (productId) params.product_id = productId
+  const { data } = await apiClient.get('/sales', { params })
   return data
 }
 

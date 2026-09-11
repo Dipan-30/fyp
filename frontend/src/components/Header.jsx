@@ -5,6 +5,7 @@ import { Bell, Activity } from 'lucide-react'
 const PAGE_TITLES = {
   '/':            'Dashboard',
   '/reviews':     'Reviews',
+  '/sales':       'Sales Transactions',
   '/products':    'Product Analysis',
   '/sentiment':   'Sentiment Analysis',
   '/forecasting': 'Forecasting',
