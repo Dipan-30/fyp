@@ -1,0 +1,97 @@
+# ══════════════════════════════════════════════════════════════════════════════
+#  .gitignore — LLM Sentiment Analysis & Sales Forecasting FYP
+# ══════════════════════════════════════════════════════════════════════════════
+
+# ── Secrets & environment ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Python / Backend ──────────────────────────────────────────────────────────
+
+# Virtual environment
+backend/venv/
+backend/.venv/
+venv/
+.venv/
+
+# Byte-compiled / optimised files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+*.pyo
+
+# Distribution / packaging
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# pytest / test cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+
+# Jupyter Notebooks (if used for EDA)
+.ipynb_checkpoints/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+
+# Dependencies
+frontend/node_modules/
+node_modules/
+
+# Vite production build output
+frontend/dist/
+frontend/.vite/
+
+# Local env files (Vite)
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# ── OS & Editor ───────────────────────────────────────────────────────────────
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# VS Code
+.vscode/
+*.code-workspace
+
+# JetBrains (PyCharm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+.cache/
+
+# Coverage reports
+coverage/
+lcov.info
