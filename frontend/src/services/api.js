@@ -52,6 +52,30 @@ export async function getProducts() {
   return data
 }
 
+/** GET /api/products/:id */
+export async function getProductOverview(id) {
+  const { data } = await apiClient.get(`/products/${id}`)
+  return data
+}
+
+/** GET /api/products/:id/sales */
+export async function getProductSales(id) {
+  const { data } = await apiClient.get(`/products/${id}/sales`)
+  return data
+}
+
+/** GET /api/products/:id/sentiment */
+export async function getProductSentiment(id) {
+  const { data } = await apiClient.get(`/products/${id}/sentiment`)
+  return data
+}
+
+/** GET /api/products/:id/forecast */
+export async function getProductForecast(id) {
+  const { data } = await apiClient.get(`/products/${id}/forecast`)
+  return data
+}
+
 // ── Reviews ───────────────────────────────────────────────────────────────────
 
 /**
@@ -79,6 +103,20 @@ export async function getSales({ page = 1, limit = 20, productId = null } = {}) 
   const params = { page, limit }
   if (productId) params.product_id = productId
   const { data } = await apiClient.get('/sales', { params })
+  return data
+}
+
+// ── Research (Phase 9) ────────────────────────────────────────────────────────
+
+/** GET /api/research/summary */
+export async function getResearchSummary() {
+  const { data } = await apiClient.get('/research/summary')
+  return data
+}
+
+/** GET /api/research/dataset */
+export async function getForecastingDataset() {
+  const { data } = await apiClient.get('/research/dataset')
   return data
 }
 

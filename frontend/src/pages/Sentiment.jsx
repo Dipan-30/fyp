@@ -1,58 +1,179 @@
-import { BarChart2, Brain, Cpu } from 'lucide-react'
-
-const LLM_MODELS = [
-  { name: 'llama3.1:8b',  color: 'bg-brand/15 border-brand/30 text-brand-light' },
-  { name: 'qwen2.5:7b',   color: 'bg-accent-teal/15 border-accent-teal/30 text-accent-teal' },
-  { name: 'gemma3:4b',    color: 'bg-accent-purple/15 border-accent-purple/30 text-accent-purple' },
-]
+import { useState, useEffect } from 'react'
+import { getResearchSummary } from '../services/api'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { MessageSquare, Layers } from 'lucide-react'
 
 export default function Sentiment() {
-  return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <h2 className="text-xl font-bold text-white">Sentiment Analysis</h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Multi-model LLM sentiment scoring with ensemble aggregation.
-        </p>
-      </div>
+  const [data, setData] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-      {/* LLM model cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {LLM_MODELS.map(({ name, color }) => (
-          <div key={name} className="card flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Brain size={15} className="text-slate-400" />
-              <p className="text-sm font-semibold text-white font-mono">{name}</p>
-            </div>
-            <div className={`text-[11px] font-medium px-2.5 py-1 rounded-full border w-fit ${color}`}>
-              via Ollama
-            </div>
-            <div className="h-16 flex items-center justify-center border border-dashed border-surface-border rounded-lg">
-              <p className="text-xs text-slate-600">Score distribution placeholder</p>
-            </div>
-          </div>
-        ))}
-      </div>
+  useEffect(() => {
+    getResearchSummary()
+      .then((res) => {
+        setData(res.data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error(err)
+        setLoading(false)
+      })
+  }, [])
 
-      {/* Ensemble card */}
-      <div className="card opacity-40">
-        <div className="flex items-center gap-2 mb-2">
-          <Cpu size={14} className="text-slate-400" />
-          <p className="text-sm font-semibold text-white">Ensemble Sentiment Index</p>
+  if (loading || !data) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+      </div>
+    )
+  }
+
+  const llm = data.llm_sentiment_stats
+  
+  // Data for Model Distribution Bar Chart
+  const modelDistData = [
+    {
+      name: 'Llama 3.1 8B',
+      Positive: llm['llama3.1:8b'].positive_count,
+      Neutral: llm['llama3.1:8b'].neutral_count,
+      Negative: llm['llama3.1:8b'].negative_count,
+    },
+    {
+      name: 'Qwen 2.5 7B',
+      Positive: llm['qwen2.5:7b'].positive_count,
+      Neutral: llm['qwen2.5:7b'].neutral_count,
+      Negative: llm['qwen2.5:7b'].negative_count,
+    },
+    {
+      name: 'Gemma 3 4B',
+      Positive: llm['gemma3:4b'].positive_count,
+      Neutral: llm['gemma3:4b'].neutral_count,
+      Negative: llm['gemma3:4b'].negative_count,
+    },
+  ]
+
+  // Data for Ensemble Distribution Pie Chart
+  const ens = data.ensemble_stats
+  const ensembleDistData = [
+    { name: 'Positive', value: ens.positive_labels },
+    { name: 'Neutral', value: ens.neutral_labels },
+    { name: 'Negative', value: ens.negative_labels },
+  ]
+
+  const agreementData = [
+    { name: 'Unanimous (3)', value: ens.full_agreement_count_3 },
+    { name: 'Majority (2)', value: ens.partial_agreement_count_2 },
+    { name: 'Split (1)', value: ens.disagreement_count_1 },
+  ]
+
+  const COLORS = ['#059669', '#64748b', '#dc2626']
+  const AGREE_COLORS = ['#2563eb', '#d97706', '#dc2626']
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-surface border border-surface-border p-3 rounded-lg shadow-xl">
+          <p className="text-white font-medium mb-2">{label}</p>
+          {payload.map((entry, idx) => (
+            <p key={idx} style={{ color: entry.color }} className="text-sm">
+              {entry.name}: {entry.value}
+            </p>
+          ))}
         </div>
-        <p className="text-xs text-slate-500 leading-relaxed">
-          The ensemble aggregates scores from all three LLMs into a single daily sentiment index,
-          which is later used as an exogenous variable in SARIMAX forecasting.
+      )
+    }
+    return null
+  }
+
+  return (
+    <div className="p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div>
+        <h1 className="text-2xl font-semibold text-white tracking-tight flex items-center gap-2">
+          <MessageSquare className="text-brand" /> Sentiment Analysis Pipeline
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">
+          Review-level sentiment extraction across three local LLMs and majority-voting ensemble results.
         </p>
       </div>
 
-      <div className="flex flex-col items-center justify-center py-8 text-center">
-        <BarChart2 size={28} className="text-brand-light mb-3" />
-        <h3 className="text-base font-semibold text-white mb-1">Sentiment pipeline coming in Phase 3</h3>
-        <p className="text-sm text-slate-500 max-w-md">
-          Ollama must be running locally with the three models pulled.
-          This page will trigger analysis, display per-review scores, and show the daily sentiment index chart.
-        </p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* ── Model Distribution ──────────────────────────────────────────── */}
+        <div className="card col-span-1 lg:col-span-2 flex flex-col">
+          <h2 className="text-base font-medium text-white mb-6">Sentiment Class Distribution by LLM</h2>
+          <div className="h-80 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={modelDistData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                <XAxis dataKey="name" stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                <YAxis stroke="#94a3b8" tick={{ fill: '#94a3b8' }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#334155', opacity: 0.4 }} />
+                <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                <Bar dataKey="Positive" fill={COLORS[0]} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Neutral" fill={COLORS[1]} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Negative" fill={COLORS[2]} radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* ── Ensemble Distribution ───────────────────────────────────────── */}
+        <div className="card flex flex-col">
+          <h2 className="text-base font-medium text-white mb-6 flex items-center gap-2">
+            <Layers size={18} className="text-teal-400" /> Ensemble Final Distribution
+          </h2>
+          <div className="h-64 w-full relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={ensembleDistData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                  labelLine={false}
+                >
+                  {ensembleDistData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* ── Model Agreement ─────────────────────────────────────────────── */}
+        <div className="card flex flex-col">
+          <h2 className="text-base font-medium text-white mb-6">Inter-Model Agreement (N=1,000)</h2>
+          <div className="h-64 w-full relative">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={agreementData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
+                  labelLine={false}
+                >
+                  {agreementData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={AGREE_COLORS[index % AGREE_COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
       </div>
     </div>
   )

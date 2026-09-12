@@ -1,230 +1,272 @@
-import { useEffect, useState } from 'react'
-import { getHealth, getDatasetStats } from '../services/api.js'
+import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import {
-  CheckCircle2, XCircle, Loader2,
-  MessageSquare, ShoppingCart, Package,
-  Archive, Calendar, Brain, TrendingUp,
+  MessageSquare, Package, ShoppingCart, Brain, Cpu, CheckCircle,
+  TrendingDown, ArrowRight, ArrowDown, BarChart2, Activity, TrendingUp, Layers
 } from 'lucide-react'
+import {
+  PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer
+} from 'recharts'
+import { getResearchSummary, getDatasetStats, getProducts } from '../services/api'
 
-// ── Reusable sub-components ───────────────────────────────────────────────────
-
-function StatusBadge({ status }) {
-  if (status === 'loading') return (
-    <span className="flex items-center gap-1.5 text-xs text-slate-400">
-      <Loader2 size={13} className="animate-spin" /> Checking…
-    </span>
-  )
-  if (status === 'ok') return (
-    <span className="badge-green"><CheckCircle2 size={12} /> Online</span>
-  )
-  return (
-    <span className="badge-red"><XCircle size={12} /> Offline</span>
-  )
+// Colors matching the existing theme
+const COLORS = {
+  positive: '#14b8a6', // teal-500
+  neutral: '#64748b',  // slate-500
+  negative: '#f43f5e', // rose-500
+  brand: '#3b82f6',    // blue-500
 }
-
-function DbBadge({ status }) {
-  if (status === 'connected') return (
-    <span className="badge-green"><CheckCircle2 size={12} /> Connected</span>
-  )
-  if (status === null) return (
-    <span className="flex items-center gap-1.5 text-xs text-slate-400">
-      <Loader2 size={13} className="animate-spin" /> Checking…
-    </span>
-  )
-  return (
-    <span className="badge-red"><XCircle size={12} /> Unreachable</span>
-  )
-}
-
-function StatCard({ icon: Icon, label, value, sub, color = 'text-brand-light' }) {
-  return (
-    <div className="card flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <Icon size={15} className={color} />
-        <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">{label}</p>
-      </div>
-      <p className="text-2xl font-bold text-white">
-        {value ?? <span className="text-slate-600">—</span>}
-      </p>
-      {sub && <p className="text-xs text-slate-500">{sub}</p>}
-    </div>
-  )
-}
-
-function FeatureCard({ icon: Icon, title, description, phase, color }) {
-  return (
-    <div className="card flex flex-col gap-3">
-      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
-        <Icon size={20} className="text-white" />
-      </div>
-      <div>
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
-        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{description}</p>
-      </div>
-      <span className="badge-brand self-start">{phase}</span>
-    </div>
-  )
-}
-
-// ── Dashboard ─────────────────────────────────────────────────────────────────
 
 export default function Dashboard() {
-  const [health, setHealth] = useState({ status: 'loading', data: null })
-  const [stats,  setStats]  = useState({ loading: true, data: null, error: null })
+  const [summaryData, setSummaryData] = useState(null)
+  const [statsData, setStatsData] = useState(null)
+  const [productsData, setProductsData] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    getHealth()
-      .then((data) => setHealth({ status: 'ok', data }))
-      .catch(() => setHealth({ status: 'error', data: null }))
-
-    getDatasetStats()
-      .then((data) => setStats({ loading: false, data, error: null }))
-      .catch((err) => setStats({ loading: false, data: null, error: err.message }))
+    Promise.all([getResearchSummary(), getDatasetStats(), getProducts()])
+      .then(([summaryRes, statsRes, productsRes]) => {
+        setSummaryData(summaryRes.data)
+        setStatsData(statsRes)
+        setProductsData(productsRes)
+        setLoading(false)
+      })
+      .catch((err) => {
+        setError(err.message)
+        setLoading(false)
+      })
   }, [])
 
-  const s = stats.data
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full min-h-[50vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand"></div>
+      </div>
+    )
+  }
+
+  if (error || !summaryData || !statsData || !productsData) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full min-h-[50vh] text-center">
+        <div className="w-12 h-12 bg-rose-500/10 text-rose-500 rounded-full flex items-center justify-center mb-4">
+          <TrendingDown size={24} />
+        </div>
+        <h3 className="text-lg font-medium text-white mb-2">Unable to load research data</h3>
+        <p className="text-slate-400 text-sm max-w-sm">{error || "Data missing"}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="mt-4 px-4 py-2 bg-surface-raised border border-surface-border text-slate-300 rounded-lg hover:bg-surface-card transition-colors"
+        >
+          Retry
+        </button>
+      </div>
+    )
+  }
+
+  const {
+    llm_sentiment_stats: llm,
+    ensemble_stats: ens
+  } = summaryData
+
+  const totalModelsRun = 
+    (llm['llama3.1:8b']?.total_records || 0) + 
+    (llm['qwen2.5:7b']?.total_records || 0) + 
+    (llm['gemma3:4b']?.total_records || 0)
+
+  // Sentiment Pie Chart Data
+  const pieData = [
+    { name: 'Positive', value: ens.positive_labels, color: COLORS.positive },
+    { name: 'Neutral', value: ens.neutral_labels, color: COLORS.neutral },
+    { name: 'Negative', value: ens.negative_labels, color: COLORS.negative },
+  ]
+
+  // Model comparison bar chart data
+  const modelCompData = [
+    {
+      name: 'Llama 3.1 8B',
+      pos: llm['llama3.1:8b']?.positive_pct || 0,
+      neu: llm['llama3.1:8b']?.neutral_pct || 0,
+      neg: llm['llama3.1:8b']?.negative_pct || 0,
+    },
+    {
+      name: 'Qwen 2.5 7B',
+      pos: llm['qwen2.5:7b']?.positive_pct || 0,
+      neu: llm['qwen2.5:7b']?.neutral_pct || 0,
+      neg: llm['qwen2.5:7b']?.negative_pct || 0,
+    },
+    {
+      name: 'Gemma 3 4B',
+      pos: llm['gemma3:4b']?.positive_pct || 0,
+      neu: llm['gemma3:4b']?.neutral_pct || 0,
+      neg: llm['gemma3:4b']?.negative_pct || 0,
+    }
+  ]
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Page heading */}
-      <div>
-        <h2 className="text-xl font-bold text-white">
-          LLM-Based Sentiment Analysis &amp; Sales Forecasting
-        </h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Final Year Project — Phase 2: Data Ingestion &amp; MongoDB Integration
+    <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-10 animate-in fade-in duration-500">
+      
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      <div className="border-b border-surface-border pb-6">
+        <h1 className="text-2xl font-semibold text-white tracking-tight">
+          LLM-Based Product Intelligence System
+        </h1>
+        <p className="text-slate-400 text-sm mt-2">
+          Overview of customer sentiment extraction and global project metrics.
         </p>
       </div>
 
-      {/* System status row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="card flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Backend API</p>
-            <div className="flex items-center gap-3 mt-1">
-              <StatusBadge status={health.status} />
-              {health.data && (
-                <span className="text-xs text-slate-500 font-mono">
-                  {health.data.app} v{health.data.version}
-                </span>
-              )}
-            </div>
-            {health.status === 'error' && (
-              <p className="text-xs text-rose-400 mt-1">
-                Cannot reach FastAPI backend on port 8000.
-              </p>
-            )}
-          </div>
-          <div className="bg-surface-raised border border-surface-border rounded-lg px-3 py-2 text-xs font-mono text-slate-400 shrink-0">
-            GET /api/health
-          </div>
+      {/* ── PRODUCT DETAILS CTA ─────────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-teal-500/20 to-surface-card border border-teal-500/30 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg shadow-teal-500/5 mb-6">
+        <div>
+          <h2 className="text-2xl font-semibold text-white mb-2 tracking-tight">PRODUCT DETAILS</h2>
+          <p className="text-slate-300 max-w-xl leading-relaxed">
+            Explore sales performance, customer sentiment, and purchase recommendations for all 100 products.
+          </p>
         </div>
-
-        <div className="card flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">MongoDB Atlas</p>
-            <div className="flex items-center gap-3 mt-1">
-              <DbBadge status={health.data?.database ?? null} />
-            </div>
-          </div>
-          <div className="bg-surface-raised border border-surface-border rounded-lg px-3 py-2 text-xs font-mono text-slate-400 shrink-0">
-            fyp_db
-          </div>
-        </div>
+        <Link 
+          to="/products" 
+          className="shrink-0 bg-teal-500 hover:bg-teal-400 text-white font-medium py-3 px-8 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+        >
+          View Products <ArrowRight size={18} />
+        </Link>
       </div>
 
-      {/* Live stats grid */}
+      {/* ── PRODUCT ANALYSIS CTA ────────────────────────────────────────── */}
+      <div className="bg-gradient-to-r from-brand/20 to-surface-card border border-brand/30 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg shadow-brand/5">
+        <div>
+          <h2 className="text-2xl font-semibold text-white mb-2 tracking-tight">PRODUCT ANALYSIS</h2>
+          <p className="text-slate-300 max-w-xl leading-relaxed">
+            Select a product to explore customer sentiment, sales history, purchase recommendation and future sales prediction.
+          </p>
+        </div>
+        <Link 
+          to="/product-analysis" 
+          className="shrink-0 bg-brand hover:bg-brand-light text-white font-medium py-3 px-8 rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+        >
+          Analyze Product <ArrowRight size={18} />
+        </Link>
+      </div>
+
+      {/* ── KPI SECTION ─────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <KPICard icon={<Package size={18} />} label="Total Products" value={statsData.unique_products_total?.toLocaleString() || 0} />
+        <KPICard icon={<MessageSquare size={18} />} label="Total Reviews" value={statsData.review_count?.toLocaleString() || 0} />
+        <KPICard icon={<ShoppingCart size={18} />} label="Total Sales Units" value={statsData.total_purchase_quantity?.toLocaleString() || 0} />
+        <KPICard icon={<Brain size={18} />} label="LLM Models" value={Object.keys(llm).length} />
+        <KPICard icon={<Cpu size={18} />} label="Model Inferences" value={totalModelsRun.toLocaleString()} />
+        <KPICard icon={<CheckCircle size={18} />} label="Ensemble Agreement" value={`${ens.full_agreement_pct?.toFixed(1)}%`} />
+      </div>
+
+      {/* ── RESEARCH PIPELINE ───────────────────────────────────────────── */}
       <div>
-        <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">
-          Dataset Overview
-        </p>
-
-        {stats.loading && (
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <Loader2 size={14} className="animate-spin" /> Loading statistics…
-          </div>
-        )}
-
-        {stats.error && (
-          <div className="card border-rose-500/20 bg-rose-500/5">
-            <p className="text-xs text-rose-400">
-              Could not load statistics. Make sure the dataset has been imported
-              (<code className="font-mono">POST /api/dataset/import</code>).
-            </p>
-          </div>
-        )}
-
-        {s && (
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-            <StatCard
-              icon={MessageSquare} label="Total Reviews"
-              value={s.review_count.toLocaleString()}
-              sub={`${s.unique_products_reviews} unique products`}
-              color="text-brand-light"
-            />
-            <StatCard
-              icon={ShoppingCart} label="Purchase Transactions"
-              value={s.sales_transaction_count.toLocaleString()}
-              sub={`${s.unique_products_sales} unique products`}
-              color="text-accent-teal"
-            />
-            <StatCard
-              icon={Package} label="Total Products"
-              value={s.unique_products_total.toLocaleString()}
-              sub={`${s.product_overlap_count} overlap (reviews ∩ sales)`}
-              color="text-accent-purple"
-            />
-            <StatCard
-              icon={Archive} label="Total Quantity Sold"
-              value={s.total_purchase_quantity.toLocaleString()}
-              sub={`avg ${s.avg_purchases_per_product} purchases/product`}
-              color="text-accent-amber"
-            />
-            <StatCard
-              icon={Calendar} label="Review Date Range"
-              value={s.review_date_min || '—'}
-              sub={`to ${s.review_date_max || '—'}`}
-              color="text-brand-light"
-            />
-            <StatCard
-              icon={Calendar} label="Sales Date Range"
-              value={s.sales_date_min || '—'}
-              sub={`to ${s.sales_date_max || '—'}`}
-              color="text-accent-teal"
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Upcoming phases */}
-      <div>
-        <p className="text-xs text-slate-500 uppercase tracking-wider font-medium mb-3">
-          Upcoming Phases
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          <FeatureCard
-            icon={MessageSquare}
-            title="Multi-Model Sentiment Analysis"
-            description="Analyse reviews using llama3.1:8b, qwen2.5:7b, and gemma3:4b via Ollama."
-            phase="Phase 3"
-            color="bg-brand"
-          />
-          <FeatureCard
-            icon={TrendingUp}
-            title="Sales Forecasting (SARIMA/SARIMAX)"
-            description="Time-series forecasting with statsmodels, using sentiment as an exogenous variable."
-            phase="Phase 4"
-            color="bg-accent-teal"
-          />
-          <FeatureCard
-            icon={Brain}
-            title="Ensemble Scoring"
-            description="Combine outputs of three LLMs into a daily sentiment index for improved accuracy."
-            phase="Phase 3"
-            color="bg-accent-purple"
-          />
+        <h2 className="text-lg font-medium text-white mb-4">Research Pipeline</h2>
+        <div className="flex flex-col lg:flex-row items-center justify-between bg-surface-card border border-surface-border rounded-xl p-6 gap-4">
+          <PipelineNode icon={<Package size={20} />} title="Product Selection" desc={`${productsData.total} products available`} />
+          <PipelineArrow />
+          <PipelineNode icon={<Brain size={20} />} title="LLM Analysis" desc="3 local LLMs on reviews" />
+          <PipelineArrow />
+          <PipelineNode icon={<Layers size={20} />} title="Ensemble Sentiment" desc="Product-level sentiment" />
+          <PipelineArrow />
+          <PipelineNode icon={<CheckCircle size={20} />} title="Recommendation" desc="Buy / Consider / Don't Buy" />
+          <PipelineArrow />
+          <PipelineNode icon={<TrendingUp size={20} />} title="Sales Forecasting" desc="Sales Only vs Sales+Sentiment" />
         </div>
       </div>
+
+      {/* ── SENTIMENT OVERVIEW ──────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-surface-card border border-surface-border rounded-xl p-5 flex flex-col h-[380px]">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-base font-medium text-white">Global Ensemble Sentiment</h2>
+            <Link to="/sentiment" className="text-xs font-medium text-brand-light hover:text-brand flex items-center gap-1 transition-colors">
+              View Sentiment Analysis <ArrowRight size={14} />
+            </Link>
+          </div>
+          <div className="flex-1 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={70}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {pieData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip 
+                  formatter={(value) => [`${value} reviews`, 'Count']}
+                  contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '13px', color: '#94a3b8' }} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className="bg-surface-card border border-surface-border rounded-xl p-5 flex flex-col h-[380px]">
+          <h2 className="text-base font-medium text-white mb-6">LLM Model Overview</h2>
+          <div className="flex-1 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={modelCompData} layout="vertical" margin={{ top: 0, right: 30, left: 30, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#334155" opacity={0.5} />
+                <XAxis type="number" hide />
+                <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 13 }} width={90} />
+                <RechartsTooltip 
+                  formatter={(value) => [`${value}%`, '']}
+                  contentStyle={{ backgroundColor: '#1e293b', borderColor: '#334155', color: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ fontSize: '13px', paddingTop: '10px' }} />
+                <Bar dataKey="pos" name="Positive" stackId="a" fill={COLORS.positive} radius={[0, 0, 0, 0]} barSize={32} />
+                <Bar dataKey="neu" name="Neutral" stackId="a" fill={COLORS.neutral} radius={[0, 0, 0, 0]} />
+                <Bar dataKey="neg" name="Negative" stackId="a" fill={COLORS.negative} radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      </div>
+
     </div>
+  )
+}
+
+// ── Helper Components ───────────────────────────────────────────────────────
+
+function KPICard({ icon, label, value }) {
+  return (
+    <div className="bg-surface-card border border-surface-border rounded-xl p-4 flex flex-col items-center justify-center text-center group hover:border-brand/40 transition-colors">
+      <div className="text-slate-400 mb-2 group-hover:text-brand-light transition-colors">
+        {icon}
+      </div>
+      <div className="text-xl md:text-2xl font-semibold text-white mb-1 tracking-tight">{value}</div>
+      <div className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wider">{label}</div>
+    </div>
+  )
+}
+
+function PipelineNode({ icon, title, desc }) {
+  return (
+    <div className="flex flex-col items-center text-center min-w-[140px]">
+      <div className="w-12 h-12 rounded-full bg-surface-raised border border-surface-border flex items-center justify-center text-brand-light mb-3 shadow-sm">
+        {icon}
+      </div>
+      <h3 className="text-sm font-medium text-white mb-1">{title}</h3>
+      <p className="text-[11px] text-slate-400 whitespace-nowrap">{desc}</p>
+    </div>
+  )
+}
+
+function PipelineArrow() {
+  return (
+    <>
+      <div className="hidden lg:flex text-slate-600 px-1"><ArrowRight size={18} /></div>
+      <div className="flex lg:hidden text-slate-600 py-2"><ArrowDown size={18} /></div>
+    </>
   )
 }

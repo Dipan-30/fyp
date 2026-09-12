@@ -1,118 +1,205 @@
 # LLM-Based Customer Review Sentiment Analysis and E-Commerce Sales Forecasting
 
-> **Final Year Project** — Phase 1: Project Foundation
+A final-year academic research project investigating the empirical utility of local Large Language Model (LLM) sentiment signals in individual product-centric sales forecasting.
 
 ---
 
-## Stack
+## 1. Project Overview
 
-| Layer       | Technology                                    |
-|-------------|-----------------------------------------------|
-| Frontend    | React 18, Vite, JavaScript, Tailwind CSS      |
-| Backend     | Python, FastAPI, Uvicorn                      |
-| Database    | MongoDB Atlas (Phase 2+)                      |
-| LLM         | Ollama — llama3.1:8b, qwen2.5:7b, gemma3:4b  |
-| Forecasting | statsmodels — SARIMA, SARIMAX                 |
+### Research Question
+**Does LLM-derived customer sentiment improve individual product sales forecasting?**
+
+While modern Large Language Models excel at natural language understanding, their empirical value as exogenous predictors in operational forecasting remains an active area of empirical research. This project constructs an end-to-end reproducible product intelligence system to extract sentiment signals from customer text reviews using three open-weight LLMs. It then evaluates whether incorporating this product-specific sentiment into a time-series model (ARIMAX) yields statistically significant improvements over classical univariate baselines (ARIMA and Naive persistence) for that individual product.
 
 ---
 
-## Project Structure
+## 2. Product-Centric Architecture
+
+The complete end-to-end architecture is organized to analyze individual products:
 
 ```
-project/
-├── frontend/            React + Vite frontend
-│   ├── src/
-│   │   ├── components/  Sidebar, Header, Layout
-│   │   ├── pages/       Dashboard, Reviews, Products, Sentiment, Forecasting, Results
-│   │   ├── services/    Axios API client (api.js)
-│   │   ├── hooks/       (future custom hooks)
-│   │   └── utils/       (future helpers)
-│   ├── package.json
-│   └── vite.config.js
-│
-├── backend/             FastAPI backend
-│   ├── app/
-│   │   ├── main.py      FastAPI app + CORS
-│   │   ├── config.py    Environment variable config
-│   │   ├── db/          MongoDB connection (Phase 2+)
-│   │   ├── models/      Pydantic models (Phase 2+)
-│   │   ├── routers/     API route groups (Phase 2+)
-│   │   ├── services/    Business logic (Phase 2+)
-│   │   ├── llm/         Ollama integration (Phase 3+)
-│   │   ├── workers/     Background workers (Phase 3+)
-│   │   └── prompts/     LLM prompt templates (Phase 3+)
-│   ├── requirements.txt
-│   └── .env.example
-│
-└── README.md
+                    PRODUCT
+                       │
+         ┌─────────────┴─────────────┐
+         │                           │
+         ▼                           ▼
+  PURCHASE HISTORY              CUSTOMER REVIEWS
+         │                           │
+         │                    ┌──────┴──────┐
+         │                    ▼             ▼
+         │                  Llama         Qwen/Gemma
+         │                    │             │
+         │                    └──────┬──────┘
+         │                           ▼
+         │                   ENSEMBLE SENTIMENT
+         │                           │
+         │                           ▼
+         │                  PRODUCT SENTIMENT
+         │                           │
+         │                           ▼
+         │                  BUY RECOMMENDATION
+         │
+         ▼
+   HISTORICAL SALES
+         │
+         ├──────────────────────┐
+         │                      │
+         ▼                      ▼
+  SALES-ONLY MODEL       SALES + SENTIMENT MODEL
+         │                      │
+         └──────────┬───────────┘
+                    ▼
+             MODEL COMPARISON
+                    │
+                    ▼
+            FUTURE SALES
+              PREDICTION
+                    │
+                    ▼
+            PRODUCT INSIGHTS
 ```
 
 ---
 
-## Running Locally
+## 3. Technology Stack
 
-### Backend
+- **Frontend**: React 18, Vite, JavaScript, Tailwind CSS, Recharts, Axios, Lucide React, React Router 6.
+- **Backend**: Python 3.13, FastAPI, Uvicorn, Pandas, NumPy, statsmodels, SciPy, Matplotlib.
+- **Database**: MongoDB Atlas (PyMongo driver, compound unique indexing for idempotency).
+- **LLM Engine**: Ollama running quantized local open-weight models via REST API.
+
+---
+
+## 4. Dataset
+
+The finalized dataset consists of empirical retail observations spanning a 1-year historical window:
+
+- **Customer Reviews**: 1,000 distinct text reviews (`review_id`, `product_id`, `customer_id`, `review_date`, `review_text`).
+- **Sales Transactions**: 1,000 purchase transactions (`transaction_id`, `product_id`, `customer_id`, `purchase_date`, `quantity`, `purchase_price`).
+- **Product Catalog**: 100 distinct products with 100% mutual catalog overlap between reviews and sales.
+- **Data Sparsity Limitation**: Product-level data exhibits significant sparsity. Individual products may only have transactions on a subset of active sales dates. The forecasting module explicitly handles this by determining observation feasibility dynamically per product.
+
+---
+
+## 5. LLM Models
+
+Zero-shot structured sentiment extraction was executed sequentially using three local open-weight models via Ollama:
+
+1. **Meta Llama 3.1 8B** (`llama3.1:8b`)
+2. **Alibaba Qwen 2.5 7B** (`qwen2.5:7b`)
+3. **Google Gemma 3 4B** (`gemma3:4b`)
+
+---
+
+## 6. Sentiment Ensemble & Recommendation
+
+The multi-LLM ensemble resolves sentiment labels and numerical scores for each review:
+
+### Scoring System
+- **Positive**: $+1.0$
+- **Neutral**: $0.0$
+- **Negative**: $-1.0$
+
+### Purchase Recommendation Logic
+The product-specific sentiment is used to generate a purchase recommendation:
+- **Strong Positive** (Score >= +0.50) → **RECOMMENDED**
+- **Mixed / Neutral** (-0.25 < Score < +0.50) → **CONSIDER**
+- **Negative** (Score <= -0.25) → **NOT RECOMMENDED**
+
+---
+
+## 7. Individual Product Forecasting
+
+### Models Evaluated
+1. **Historical Sales Only**: ARIMA fitted solely on historical weekly product sales.
+2. **Historical Sales + Sentiment**: ARIMAX model incorporating lagged product sentiment as an exogenous regressor.
+3. **Naive Baseline**: Simple persistence forecast.
+
+### Strict Temporal Alignment & Leakage Prevention
+- **Chronological Evaluation**: The system performs a chronological 80/20 train/test evaluation (no random shuffling).
+- **No Future Information Leakage**: For target period $t$, only information (sales and sentiment) available *before* $t$ is utilized.
+
+### Metrics Computed
+- **MAE** (Mean Absolute Error)
+- **RMSE** (Root Mean Squared Error)
+- **MAPE** (Mean Absolute Percentage Error)
+
+---
+
+## 8. Limitations
+
+1. **Sparse Transaction Structure**: Product-level daily data is highly sparse.
+2. **Observational Data**: Non-experimental, synthetic e-commerce transaction benchmark.
+3. **Unmodeled Exogenous Shocks**: Promotions, price adjustments, seasonal holidays, and stockouts were not controlled for.
+4. **Limited Generalizability**: Findings represent the tested domain and model configurations and should not be generalized to all retail categories.
+
+---
+
+## 9. Setup & Reproduction Guide
+
+### Prerequisites
+- **Python**: 3.11, 3.12, or 3.13
+- **Node.js**: 18+ and npm
+- **MongoDB**: MongoDB Atlas cluster or local instance (v6.0+)
+- **Ollama**: Local installation with models downloaded (`ollama pull llama3.1:8b`, `ollama pull qwen2.5:7b`, `ollama pull gemma3:4b`)
+
+---
+
+### Step 1: Environment Setup
+
+#### Configure Backend Environment
+```bash
+cp backend/.env.example backend/.env
+```
+Edit `backend/.env` with your MongoDB credentials:
+```env
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DATABASE=fyp_db
+OLLAMA_BASE_URL=http://localhost:11434
+DEBUG=false
+```
+
+---
+
+### Step 2: Backend Setup & Installation
 
 ```bash
 cd backend
 
-# 1. Create and activate a virtual environment
-python -m venv venv
-source venv/bin/activate          # Windows: venv\Scripts\activate
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate    # On Windows: venv\Scripts\activate
 
-# 2. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
-
-# 3. Copy and configure environment variables
-cp .env.example .env
-# Edit .env with your real MONGODB_URI, etc.
-
-# 4. Start the server
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Backend will be available at: http://localhost:8000  
-API docs: http://localhost:8000/api/docs
+---
 
-### Frontend
+### Step 3: Frontend Setup & Installation
 
 ```bash
 cd frontend
-
-# 1. Install dependencies
 npm install
-
-# 2. Start the dev server
-npm run dev
 ```
 
-Frontend will be available at: http://localhost:5173
-
 ---
 
-## API Endpoints (Phase 1)
+### Step 4: Launching the Application
 
-| Method | Endpoint      | Description          |
-|--------|---------------|----------------------|
-| GET    | /api/health   | Backend liveness check |
-| GET    | /api/docs     | Swagger UI           |
-| GET    | /api/redoc    | ReDoc UI             |
+#### Start the FastAPI Backend
+```bash
+cd backend
+source venv/bin/activate
+PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+- API Docs: `http://127.0.0.1:8000/api/docs`
+- Health Probe: `http://127.0.0.1:8000/api/health`
 
----
-
-## Dataset Files (Phase 2+)
-
-- `customer_reviews_data.csv`
-- `customer_purchase_data.csv`
-
----
-
-## Phases
-
-| Phase | Description                                    | Status      |
-|-------|------------------------------------------------|-------------|
-| 1     | Project foundation, folder structure, health API | ✅ Complete |
-| 2     | Dataset preprocessing + MongoDB integration    | 🔜 Planned  |
-| 3     | Multi-model LLM sentiment analysis via Ollama  | 🔜 Planned  |
-| 4     | SARIMA / SARIMAX forecasting                   | 🔜 Planned  |
-| 5     | Evaluation, results, UI polish                 | 🔜 Planned  |
+#### Start the React Research Dashboard
+```bash
+cd frontend
+npm run dev
+```
+- Open `http://127.0.0.1:5173` in your browser.
+- Navigate to **Product Analysis** to select an individual product and execute sentiment-enhanced sales forecasting.

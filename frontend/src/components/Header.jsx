@@ -1,5 +1,4 @@
 import { useLocation } from 'react-router-dom'
-import { Bell, Activity } from 'lucide-react'
 
 // Map pathnames to human-readable page titles
 const PAGE_TITLES = {
@@ -26,19 +25,6 @@ export default function Header() {
 
       {/* Right-side controls */}
       <div className="flex items-center gap-3">
-        {/* System status pill */}
-        <div className="flex items-center gap-1.5 text-xs text-slate-400 bg-surface-raised border border-surface-border px-3 py-1.5 rounded-full">
-          <Activity size={12} className="text-emerald-400" />
-          Phase 1
-        </div>
-
-        {/* Placeholder notification icon */}
-        <button
-          aria-label="Notifications"
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-200 hover:bg-surface-raised transition-colors"
-        >
-          <Bell size={16} />
-        </button>
       </div>
     </header>
   )

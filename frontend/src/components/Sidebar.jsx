@@ -11,13 +11,10 @@ import {
 } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { to: '/',            label: 'Dashboard',         icon: LayoutDashboard },
-  { to: '/reviews',     label: 'Reviews',           icon: MessageSquare },
-  { to: '/sales',       label: 'Sales',             icon: ShoppingCart },
-  { to: '/products',    label: 'Product Analysis',  icon: Package },
-  { to: '/sentiment',   label: 'Sentiment',         icon: BarChart2 },
-  { to: '/forecasting', label: 'Forecasting',       icon: TrendingUp },
-  { to: '/results',     label: 'Forecast Results',  icon: FileBarChart },
+  { to: '/',                 label: 'Dashboard',         icon: LayoutDashboard },
+  { to: '/products',         label: 'Products',          icon: Package },
+  { to: '/product-analysis', label: 'Product Analysis',  icon: TrendingUp },
+  { to: '/sentiment',        label: 'Sentiment',         icon: MessageSquare },
 ]
 
 export default function Sidebar() {
@@ -61,7 +58,7 @@ export default function Sidebar() {
       {/* ── Footer ─────────────────────────────────────────────────────── */}
       <div className="px-5 py-4 border-t border-surface-border">
         <p className="text-[10px] text-slate-600 leading-relaxed">
-          FYP — LLM-Based Sentiment Analysis &amp; Sales Forecasting
+          LLM-Based Sentiment Analysis &amp; Sales Forecasting
         </p>
       </div>
     </aside>
