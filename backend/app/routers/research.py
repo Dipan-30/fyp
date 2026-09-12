@@ -29,25 +29,3 @@ def get_research_summary():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch research summary: {str(e)}")
 
-@router.get("/dataset")
-def get_forecasting_dataset():
-    """
-    Returns the weekly forecasting dataset.
-    """
-    try:
-        db = get_db()
-        # Return all weeks sorted chronologically
-        docs = list(db["forecasting_dataset"].find().sort("week_start_date", 1))
-        
-        if not docs:
-            raise HTTPException(status_code=404, detail="No forecasting dataset found.")
-            
-        for doc in docs:
-            doc["_id"] = str(doc["_id"])
-            
-        return {"status": "ok", "data": docs}
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch forecasting dataset: {str(e)}")
-

@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.db.connection import ping_db, close_client
 from app.db.indexes import create_indexes
-from app.routers import dataset, product_analysis, reviews, sales, research
+from app.routers import dataset, product_analysis, research
 
 
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
@@ -59,8 +59,7 @@ app.add_middleware(
 # ── Routers ───────────────────────────────────────────────────────────────────
 app.include_router(dataset.router)
 app.include_router(product_analysis.router)
-app.include_router(reviews.router)
-app.include_router(sales.router)
+
 app.include_router(research.router)
 
 
