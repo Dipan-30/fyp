@@ -212,60 +212,60 @@ export default function Products() {
             </div>
 
             {/* Controls (Search, Filters, Sort) */}
-            <div className="bg-surface-card border border-surface-border rounded-xl p-4 mb-6 flex flex-col xl:flex-row gap-4 items-center justify-between">
+            <div className="bg-surface-card border border-surface-border rounded-xl p-3 mb-6 flex items-center justify-between gap-3">
               
-              <div className="relative w-full xl:w-64">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+              <div className="relative w-48 shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
                 <input 
                   type="text" 
-                  placeholder="Search product..." 
+                  placeholder="Search..." 
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-surface border border-surface-border rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-brand-light transition-colors"
+                  className="w-full bg-surface border border-surface-border rounded-lg pl-9 pr-3 py-1.5 text-sm text-white focus:outline-none focus:border-brand-light transition-colors"
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
+              <div className="flex items-center gap-2 shrink-0 ml-auto">
                 <div className="relative">
                   <select 
                     value={filterCategory} 
                     onChange={(e) => setFilterCategory(e.target.value)}
-                    className="appearance-none bg-surface border border-surface-border rounded-lg pl-4 pr-10 py-2 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer"
+                    className="appearance-none bg-surface border border-surface-border rounded-lg pl-3 pr-8 py-1.5 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer"
                   >
                     {categories.map(c => <option key={c} value={c}>{c === 'All' ? 'All Categories' : c}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                 </div>
 
                 <div className="relative">
                   <select 
                     value={filterSentiment} 
                     onChange={(e) => setFilterSentiment(e.target.value)}
-                    className="appearance-none bg-surface border border-surface-border rounded-lg pl-4 pr-10 py-2 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer"
+                    className="appearance-none bg-surface border border-surface-border rounded-lg pl-3 pr-8 py-1.5 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer"
                   >
                     <option value="All">All Sentiments</option>
                     <option value="positive">Positive</option>
                     <option value="neutral">Neutral</option>
                     <option value="negative">Negative</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                 </div>
 
                 <div className="relative">
                   <select 
                     value={filterRecommendation} 
                     onChange={(e) => setFilterRecommendation(e.target.value)}
-                    className="appearance-none bg-surface border border-surface-border rounded-lg pl-4 pr-10 py-2 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer"
+                    className="appearance-none bg-surface border border-surface-border rounded-lg pl-3 pr-8 py-1.5 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer"
                   >
                     <option value="All">All Recommendations</option>
                     <option value="recommended">Recommended</option>
                     <option value="consider">Consider</option>
                     <option value="not recommended">Not Recommended</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                 </div>
 
-                <div className="relative border-l border-surface-border pl-3 ml-2 flex items-center gap-2">
+                <div className="relative flex items-center gap-2">
                   <span className="text-slate-400 text-sm whitespace-nowrap">Sort By:</span>
                   <div className="relative">
                     <select 
@@ -274,7 +274,7 @@ export default function Products() {
                         setSortKey(e.target.value);
                         setSortDirection(e.target.value === 'product_id' || e.target.value === 'product_name' || e.target.value === 'category' ? 'asc' : 'desc')
                       }}
-                      className="appearance-none bg-surface border border-surface-border rounded-lg pl-4 pr-10 py-2 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer min-w-[140px]"
+                    className="appearance-none bg-surface border border-surface-border rounded-lg pl-3 pr-8 py-1.5 text-sm text-white focus:outline-none focus:border-brand-light cursor-pointer min-w-[125px]"
                     >
                       <option value="product_id">Product ID</option>
                       <option value="product_name">Product Name</option>
@@ -283,7 +283,7 @@ export default function Products() {
                       <option value="reviews">Reviews</option>
                       <option value="sentiment_score">Sentiment Score</option>
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
+                    <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={14} />
                   </div>
                 </div>
               </div>
